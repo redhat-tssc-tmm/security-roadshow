@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-QUAY_URL="quay-lpv5s.apps.cluster-lpv5s.lpv5s.sandbox1300.opentlc.com"
+QUAY_URL=$(oc -n quay-enterprise get route quay-quay -o jsonpath='{.spec.host}')
 NAMESPACE="quayadmin"
 REPOSITORY="frontend"
 FULL_REPO="$QUAY_URL/$NAMESPACE/$REPOSITORY"
