@@ -14,7 +14,7 @@ QUAYPASSWORD="$2"
 # ASCII art warning sign
 echo "   ╔═════════════════════╗"
 echo "   ║                     ║"
-echo "   ║   ⚠️  CAUTION  ⚠️    ║"
+echo "   ║   ⚠️  CAUTION  ⚠️     ║"
 echo "   ║                     ║"
 echo "   ║  CONSTRUCTION SITE  ║"
 echo "   ║                     ║"
