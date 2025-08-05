@@ -194,7 +194,7 @@ get_project_id() {
         "$GITLAB_URL/api/v4/projects/$encoded_path" 2>&1)
     
     local curl_exit_code=$?
-    print_info "Debug: curl exit code for project lookup: $curl_exit_code" >&2
+    # print_info "Debug: curl exit code for project lookup: $curl_exit_code" >&2
     
     if [ $curl_exit_code -ne 0 ]; then
         print_error "curl command failed for project lookup with exit code: $curl_exit_code" >&2
@@ -238,12 +238,7 @@ delete_repository() {
     fi
     
     print_warn "Deleting repository: $project_path (ID: $project_id)"
-    read -p "Are you sure you want to delete this repository? (yes/no): " confirmation
-    
-    if [ "$confirmation" != "yes" ]; then
-        print_info "Deletion cancelled."
-        return 0
-    fi
+
     
     local response=$(curl -s -X DELETE -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
         "$GITLAB_URL/api/v4/projects/$project_id")
@@ -270,13 +265,13 @@ validate_token() {
     print_info "GitLab URL: $GITLAB_URL"
     
     # Debug: show the exact curl command being run
-    print_info "Debug: Running curl command..."
+    # print_info "Debug: Running curl command..."
     
     local response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "$GITLAB_URL/api/v4/user" 2>&1)
     local curl_exit_code=$?
     
-    print_info "Debug: curl exit code: $curl_exit_code"
-    print_info "Debug: raw response: '$response'"
+    # print_info "Debug: curl exit code: $curl_exit_code"
+    # print_info "Debug: raw response: '$response'"
     
     if [ $curl_exit_code -ne 0 ]; then
         print_error "curl command failed with exit code: $curl_exit_code"
@@ -288,7 +283,7 @@ validate_token() {
     local json_response=$(echo "$response" | sed '/HTTP_CODE:/d')
     
     print_info "HTTP Code: '$http_code'"
-    print_info "Response: '$json_response'"
+    # print_info "Response: '$json_response'"
     
     if [ "$http_code" = "200" ]; then
         local username=$(echo "$json_response" | jq -r '.username // empty' 2>/dev/null)
@@ -421,14 +416,14 @@ main() {
         print_info "Using provided token"
     else
         print_info "Getting GitLab token from OpenShift secret..."
-        print_info "Debug: About to call get_token_from_openshift with namespace='$GITLAB_NAMESPACE', secret='$SECRET_NAME', key='$SECRET_KEY'"
+        # print_info "Debug: About to call get_token_from_openshift with namespace='$GITLAB_NAMESPACE', secret='$SECRET_NAME', key='$SECRET_KEY'"
         
         GITLAB_TOKEN=$(get_token_from_openshift "$GITLAB_NAMESPACE" "$SECRET_NAME" "$SECRET_KEY")
         local token_result=$?
         
-        print_info "Debug: get_token_from_openshift returned code: $token_result"
-        print_info "Debug: Retrieved token value: '$GITLAB_TOKEN'"
-        print_info "Debug: Token length: ${#GITLAB_TOKEN}"
+        # print_info "Debug: get_token_from_openshift returned code: $token_result"
+        # print_info "Debug: Retrieved token value: '$GITLAB_TOKEN'"
+        # print_info "Debug: Token length: ${#GITLAB_TOKEN}"
         
         if [ $token_result -ne 0 ] || [ -z "$GITLAB_TOKEN" ]; then
             print_error "Failed to retrieve GitLab token from OpenShift"
