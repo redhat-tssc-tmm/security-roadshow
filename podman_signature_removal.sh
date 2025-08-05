@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Script to remove all signatures from a Quay repository using podman/skopeo
-# Usage: ./remove_signatures_podman.sh
+# Usage: ./remove_signatures_podman.sh [username] [password]
 
-set -e  # Exit on any error
+# Note: Removed 'set -e' to handle errors more explicitly
 
 # Configuration
-QUAY_URL=$(oc -n quay-enterprise get route quay-quay -o jsonpath='{.spec.host}')
+QUAY_URL="quay-lpv5s.apps.cluster-lpv5s.lpv5s.sandbox1300.opentlc.com"
 NAMESPACE="quayadmin"
 REPOSITORY="frontend"
 FULL_REPO="$QUAY_URL/$NAMESPACE/$REPOSITORY"
@@ -57,15 +57,30 @@ check_command "jq"
 
 # Function to get password from OpenShift secret
 get_password_from_openshift() {
-    print_info "Retrieving password from OpenShift secret..."
+    # Send debug info to stderr so it doesn't get captured in command substitution
+    echo "[INFO] Retrieving password from OpenShift secret..." >&2
+    echo "[INFO] Executing: oc get secret argocd-cluster -n openshift-gitops -o jsonpath='{.data.admin\.password}' | base64 -d" >&2
+    
     local password
+    
+    # Get and decode the password in one step
     if password=$(oc get secret argocd-cluster -n openshift-gitops -o jsonpath='{.data.admin\.password}' | base64 -d 2>/dev/null); then
         if [[ -n "$password" ]]; then
+            echo "[INFO] Successfully retrieved and decoded password (length: ${#password})" >&2
+            # Trim any whitespace/newlines
+            password=$(echo "$password" | tr -d '\n\r\t ')
+            echo "[INFO] Trimmed password (length: ${#password})" >&2
+            # Only output the password to stdout
             echo "$password"
             return 0
+        else
+            echo "[ERROR] Retrieved empty password from OpenShift secret" >&2
+            return 1
         fi
+    else
+        echo "[ERROR] Failed to execute oc command or decode password" >&2
+        return 1
     fi
-    return 1
 }
 
 # Function to test credentials
@@ -75,14 +90,29 @@ test_credentials() {
     
     print_info "Testing credentials for user: $test_username"
     
-    # Try to login with the provided credentials
-    if echo "$test_password" | podman login --username "$test_username" --password-stdin "$QUAY_URL" 2>/dev/null; then
-        print_info "Credentials validated successfully"
-        podman logout "$QUAY_URL" 2>/dev/null || true
-        return 0
+    # Debug info
+    if [[ -z "$test_password" ]]; then
+        print_error "Password is empty, cannot test credentials"
+        return 1
     fi
     
-    return 1
+    print_info "Password length: ${#test_password}"
+    
+    # Add a small delay to avoid rate limiting
+    sleep 2
+    
+    # Try to login with the provided credentials
+    local login_output
+    if login_output=$(echo "$test_password" | podman login --username "$test_username" --password-stdin "$QUAY_URL" 2>&1); then
+        print_info "Credentials validated successfully"
+        print_info "Login output: $login_output"
+        podman logout "$QUAY_URL" 2>/dev/null || true
+        return 0
+    else
+        print_warning "Credential test failed"
+        print_warning "Login error: $login_output"
+        return 1
+    fi
 }
 create_credentials_file() {
     local file_path="$1"
@@ -146,9 +176,9 @@ fi
 
 # If no valid credentials yet, try credentials file
 if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
-CREDS_PATH=""
-if CREDS_PATH=$(find_credentials_file); then
-    print_info "Found credentials file: $CREDS_PATH"
+    CREDS_PATH=""
+    if CREDS_PATH=$(find_credentials_file); then
+        print_info "Found credentials file: $CREDS_PATH"
         source "$CREDS_PATH"
         
         # Validate credentials from file
@@ -168,6 +198,7 @@ fi
 if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
     print_info "Trying OpenShift secret for quayadmin user..."
     if OC_PASSWORD=$(get_password_from_openshift); then
+        print_info "Retrieved password from OpenShift, testing credentials..."
         if test_credentials "quayadmin" "$OC_PASSWORD"; then
             USERNAME="quayadmin"
             PASSWORD="$OC_PASSWORD"
@@ -176,13 +207,26 @@ if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
             # Save to credentials file for future use
             if [[ -w "." ]]; then
                 CREDS_PATH="./$CREDENTIALS_FILE"
-                create_credentials_file "$CREDS_PATH" "$USERNAME" "$PASSWORD"
+                print_info "Saving validated credentials to file: $CREDS_PATH"
+                cat > "$CREDS_PATH" << EOF
+USERNAME=$USERNAME
+PASSWORD=$PASSWORD
+EOF
+                chmod 600 "$CREDS_PATH"
+                print_info "Credentials saved with secure permissions (600)"
             elif [[ -w "$HOME" ]]; then
                 CREDS_PATH="$HOME/$CREDENTIALS_FILE"
-                create_credentials_file "$CREDS_PATH" "$USERNAME" "$PASSWORD"
+                print_info "Saving validated credentials to file: $CREDS_PATH"
+                cat > "$CREDS_PATH" << EOF
+USERNAME=$USERNAME
+PASSWORD=$PASSWORD
+EOF
+                chmod 600 "$CREDS_PATH"
+                print_info "Credentials saved with secure permissions (600)"
             fi
         else
-            print_warning "OpenShift secret credentials failed validation..."
+            print_warning "OpenShift secret credentials failed validation"
+            print_info "Password retrieved but login test failed"
         fi
     else
         print_warning "Could not retrieve password from OpenShift secret"
@@ -205,10 +249,9 @@ if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
         print_error "Cannot write credentials file to current directory or home directory"
         exit 1
     fi
-fi
-
+    
     # Read the newly created credentials
-source "$CREDS_PATH"
+    source "$CREDS_PATH"
 fi
 
 # Validate final credentials
@@ -281,16 +324,23 @@ check_image_signatures() {
     local tag="$1"
     local source_image="docker://$FULL_REPO:$tag"
     
+    print_info "Checking signatures for tag: $tag"
+    
     # Use skopeo inspect to check for signatures
     local inspect_output
     if inspect_output=$(skopeo inspect --raw "$source_image" 2>/dev/null); then
         # Check if the image manifest contains signature references
         if echo "$inspect_output" | jq -e '.signatures // empty' >/dev/null 2>&1; then
+            print_info "Tag $tag has signatures"
             return 0  # Has signatures
+        else
+            print_info "Tag $tag has no signatures"
+            return 1  # No signatures
         fi
+    else
+        print_warning "Failed to inspect tag $tag, assuming no signatures"
+        return 1  # Cannot determine, assume no signatures
     fi
-    
-    return 1  # No signatures or cannot determine
 }
 
 # Function to remove signature files
@@ -405,12 +455,16 @@ remove_signature_files
 # Process each image tag
 echo
 print_info "Processing image tags..."
+print_info "Tags to process: $TAGS"
+print_info "Processing each tag individually..."
+
 successful_removals=0
 failed_removals=0
 no_signatures=0
 
 while IFS= read -r tag; do
     if [[ -n "$tag" ]]; then
+        print_info "Found tag to process: '$tag'"
         remove_signatures_from_tag "$tag"
         exit_code=$?
         if [[ $exit_code -eq 0 ]]; then
@@ -420,8 +474,12 @@ while IFS= read -r tag; do
         else
             failed_removals=$((failed_removals + 1))
         fi
+    else
+        print_warning "Empty tag found, skipping"
     fi
 done <<< "$TAGS"
+
+print_info "Finished processing all tags"
 
 # Summary
 echo
