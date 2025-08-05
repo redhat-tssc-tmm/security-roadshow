@@ -55,7 +55,35 @@ check_command "podman"
 check_command "skopeo"
 check_command "jq"
 
-# Function to create credentials file
+# Function to get password from OpenShift secret
+get_password_from_openshift() {
+    print_info "Retrieving password from OpenShift secret..."
+    local password
+    if password=$(oc get secret argocd-cluster -n openshift-gitops -o jsonpath='{.data.admin\.password}' | base64 -d 2>/dev/null); then
+        if [[ -n "$password" ]]; then
+            echo "$password"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Function to test credentials
+test_credentials() {
+    local test_username="$1"
+    local test_password="$2"
+    
+    print_info "Testing credentials for user: $test_username"
+    
+    # Try to login with the provided credentials
+    if echo "$test_password" | podman login --username "$test_username" --password-stdin "$QUAY_URL" 2>/dev/null; then
+        print_info "Credentials validated successfully"
+        podman logout "$QUAY_URL" 2>/dev/null || true
+        return 0
+    fi
+    
+    return 1
+}
 create_credentials_file() {
     local file_path="$1"
     print_info "Creating credentials file: $file_path"
@@ -96,13 +124,75 @@ find_credentials_file() {
     return 1
 }
 
-# Find or create credentials file
+# Get credentials from command line arguments or other sources
+CMD_USERNAME="$1"
+CMD_PASSWORD="$2"
+
+# Initialize credentials
+USERNAME=""
+PASSWORD=""
+
+# Try different credential sources in order of preference
+if [[ -n "$CMD_USERNAME" && -n "$CMD_PASSWORD" ]]; then
+    print_info "Using credentials from command line arguments"
+    if test_credentials "$CMD_USERNAME" "$CMD_PASSWORD"; then
+        USERNAME="$CMD_USERNAME"
+        PASSWORD="$CMD_PASSWORD"
+        print_info "Command line credentials validated"
+    else
+        print_warning "Command line credentials failed validation, trying other sources..."
+    fi
+fi
+
+# If no valid credentials yet, try credentials file
+if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
 CREDS_PATH=""
 if CREDS_PATH=$(find_credentials_file); then
     print_info "Found credentials file: $CREDS_PATH"
-else
-    print_warning "Credentials file '$CREDENTIALS_FILE' not found in current directory or home directory"
-    print_info "Please provide your Quay credentials:"
+        source "$CREDS_PATH"
+        
+        # Validate credentials from file
+        if [[ -n "$USERNAME" && -n "$PASSWORD" ]]; then
+            if test_credentials "$USERNAME" "$PASSWORD"; then
+                print_info "Credentials file validated"
+            else
+                print_warning "Credentials from file failed validation, trying other sources..."
+                USERNAME=""
+                PASSWORD=""
+            fi
+        fi
+    fi
+fi
+
+# If still no valid credentials, try OpenShift secret
+if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
+    print_info "Trying OpenShift secret for quayadmin user..."
+    if OC_PASSWORD=$(get_password_from_openshift); then
+        if test_credentials "quayadmin" "$OC_PASSWORD"; then
+            USERNAME="quayadmin"
+            PASSWORD="$OC_PASSWORD"
+            print_info "OpenShift secret credentials validated"
+            
+            # Save to credentials file for future use
+            if [[ -w "." ]]; then
+                CREDS_PATH="./$CREDENTIALS_FILE"
+                create_credentials_file "$CREDS_PATH" "$USERNAME" "$PASSWORD"
+            elif [[ -w "$HOME" ]]; then
+                CREDS_PATH="$HOME/$CREDENTIALS_FILE"
+                create_credentials_file "$CREDS_PATH" "$USERNAME" "$PASSWORD"
+            fi
+        else
+            print_warning "OpenShift secret credentials failed validation..."
+        fi
+    else
+        print_warning "Could not retrieve password from OpenShift secret"
+    fi
+fi
+
+# If still no valid credentials, prompt interactively
+if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
+    print_warning "No valid credentials found from any source"
+    print_info "Please provide your Quay credentials interactively:"
     
     # Try to create in current directory first
     if [[ -w "." ]]; then
@@ -117,16 +207,13 @@ else
     fi
 fi
 
-# Read credentials from file
-print_info "Reading credentials from $CREDS_PATH"
+    # Read the newly created credentials
 source "$CREDS_PATH"
+fi
 
-# Validate credentials
+# Validate final credentials
 if [[ -z "$USERNAME" || -z "$PASSWORD" ]]; then
-    print_error "USERNAME or PASSWORD not found in credentials file!"
-    print_info "Please ensure your credentials file contains:"
-    echo "USERNAME=your_username"
-    echo "PASSWORD=your_password"
+    print_error "USERNAME or PASSWORD not found from any source!"
     exit 1
 fi
 
