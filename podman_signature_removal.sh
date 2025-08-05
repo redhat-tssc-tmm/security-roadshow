@@ -60,11 +60,12 @@ create_credentials_file() {
     local file_path="$1"
     print_info "Creating credentials file: $file_path"
     
-    echo -n "Enter Quay username: "
-    read -r username
+    # Use /dev/tty to read from terminal even when script is piped
+    echo -n "Enter Quay username: " > /dev/tty
+    read -r username < /dev/tty
     
-    echo -n "Enter Quay password: "
-    read -s password
+    echo -n "Enter Quay password: " > /dev/tty
+    read -s password < /dev/tty
     echo  # New line after hidden password input
     
     # Create the credentials file
