@@ -36,12 +36,12 @@ clitools_in_path() {
     # Add to current session
     export PATH="$clitools_dir:$PATH"
     
-    # Add to .profile for persistence
+    # Add to .bashrc for persistence
     echo "" >> "$HOME/.profile"
-    echo "# Added by your script - clitools directory" >> "$HOME/.profile"
-    echo "export PATH=\"\$HOME/clitools:\$PATH\"" >> "$HOME/.profile"
+    echo "# Added by your script - clitools directory" >> "$HOME/.bashrc"
+    echo "export PATH=\"\$HOME/clitools:\$PATH\"" >> "$HOME/.bashrc"
     
-    print_status "~/clitools added to PATH. Please restart your shell or run 'source ~/.profile'"
+    print_status "~/clitools added to PATH. Please restart your shell or run 'source ~/.bashrc'"
 }
 
 
