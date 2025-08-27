@@ -21,6 +21,30 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to check & verify if target dir is in PATH
+clitools_in_path() {
+    local clitools_dir="$HOME/clitools"
+    
+    # Check if already in PATH
+    if [[ ":$PATH:" == *":$clitools_dir:"* ]]; then
+        print_status "~/clitools is already in PATH, all good"
+        return 0
+    fi
+    
+    print_status "Adding ~/clitools to PATH"
+    
+    # Add to current session
+    export PATH="$clitools_dir:$PATH"
+    
+    # Add to .profile for persistence
+    echo "" >> "$HOME/.profile"
+    echo "# Added by your script - clitools directory" >> "$HOME/.profile"
+    echo "export PATH=\"\$HOME/clitools:\$PATH\"" >> "$HOME/.profile"
+    
+    print_status "~/clitools added to PATH. Please restart your shell or run 'source ~/.profile'"
+}
+
+
 # Function to cleanup on exit
 cleanup() {
     if [[ -f "cosign-amd64.gz" ]]; then
@@ -68,7 +92,7 @@ main() {
     print_status "Gitsign URL: $GITSIGN_CLI_URL"
     
     mkdir -p "$HOME/clitools"
-
+    clitools_in_path
 
     # Download files
     # need to use curl, as the default image for the terminal operator doesn't have wget
