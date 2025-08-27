@@ -67,6 +67,9 @@ main() {
     print_status "Cosign URL: $COSIGN_CLI_URL"
     print_status "Gitsign URL: $GITSIGN_CLI_URL"
     
+    mkdir -p "$HOME/clitools"
+
+
     # Download files
     # need to use curl, as the default image for the terminal operator doesn't have wget
     print_status "Downloading cosign..."
@@ -90,8 +93,8 @@ main() {
     
     chmod +x cosign-amd64
     
-    if ! sudo mv cosign-amd64 /usr/local/bin/cosign; then
-        print_error "Failed to install cosign to /usr/local/bin/"
+    if ! mv cosign-amd64 $HOME/clitools/cosign; then
+        print_error "Failed to install cosign to $HOME/clitools"
         exit 1
     fi
     
@@ -104,8 +107,8 @@ main() {
     
     chmod +x gitsign-amd64
     
-    if ! sudo mv gitsign-amd64 /usr/local/bin/gitsign; then
-        print_error "Failed to install gitsign to /usr/local/bin/"
+    if ! mv gitsign-amd64 $HOME/clitools/gitsign; then
+        print_error "Failed to install gitsign to $HOME/clitools"
         exit 1
     fi
     
