@@ -297,6 +297,8 @@ main() {
     # Setup git configuration
     setup_git
     
+    cosign initialize
+
     print_status "All installations and configurations completed successfully!"
 }
 
