@@ -163,8 +163,8 @@ setup_git() {
     git config --global user.name "Wile E. Coyote"
     
     # Configure credential helper
-    print_status "Configuring credential helper... INSECURE, just for workshop convenience!"
-    git config --global credential.helper "store"
+    #print_status "Configuring credential helper... INSECURE, just for workshop convenience!"
+    #git config --global credential.helper "store"
     
     # Configure signing settings
     print_status "Configuring signing settings..."
