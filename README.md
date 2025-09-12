@@ -6,9 +6,28 @@ The script installs matching `cosign` and `gitsign` versions from the Red Hat Tr
 curl -fsSL https://raw.githubusercontent.com/redhat-tssc-tmm/security-roadshow/main/cosign_gitsign_installer.sh | bash
 ```
 
+## ocp_terminal_setup.sh
+
+Installs `cosign` and `gitsign` and sets environment variables for the Platform Engineering Roadshow/Workshop, which uses the Terminal Operator (not a bastion host).
+
+```
+source <(curl -fsSL https://raw.githubusercontent.com/redhat-tssc-tmm/security-roadshow/main/ocp_terminal_setup.sh)
+```
+
+## ads-create-secured-cluster.sh
+
+The current ADS Demo only runs the ACS `central` instance, as that is sufficient for the demonstrated usecases. For a fully working ACS (beyond image scanning and related ACS policies), a `securedCluster` instance is also necessary, that deploys sensors, admissionControllers and Node Collectors (for compliance reporting).
+
+Make sure you are logged in to the ADS OpenShift with cluster admin access and then run
+
+```
+curl -fsSL https://raw.githubusercontent.com/redhat-tssc-tmm/security-roadshow/main/ads-create-secured-cluster.sh | bash
+```
+
+
 ## cleanup_tssc-module.sh 
 
-This removes signatures from the used Quay instance repository, removes the `demo-apps` git repository and 
+This removes signatures from the used Quay instance repository and removes the `demo-apps` git repository. 
 
 You can call the script either from the instructions (with user / password) - it's at the end of the [TSSC Module instructions](https://github.com/mfosterrox/openshift-security-roadshow/blob/main/content/modules/ROOT/pages/10-tssc.adoc) or without, like this: 
 ```
