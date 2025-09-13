@@ -254,4 +254,10 @@ rm -f cluster_init_bundle.yaml
 [ "$ROXCTL_CMD" = "/tmp/roxctl" ] && rm -f /tmp/roxctl
 
 log_info "RHACS same-cluster configuration completed successfully!"
+log_info "========================================================="
+log_info "RHACS UI:     https://$EXTERNAL_CENTRAL_ENDPOINT"
+log_info "---------------------------------------------------------"
+log_info "User:         admin"
+log_info "Password:     $ADMIN_PASSWORD"
+log_info "========================================================="
 log_info "Have a nice day 🍻🍻🍻"
