@@ -1,0 +1,14 @@
+FROM quay.io/skopeo/stable:latest
+
+# Install jq and clean up package manager files in the same layer to minimize image size
+RUN microdnf install -y jq && \
+    microdnf clean all && \
+    rm -rf /var/cache/yum /var/cache/dnf /var/lib/dnf/history.* /var/log/dnf.* /var/log/yum.* && \
+    rm -rf /tmp/* /var/tmp/*
+
+# Verify jq installation
+RUN jq --version && skopeo --version
+
+LABEL maintainer="TSSC TMMs" \
+      description="Skopeo image with jq for container registry operations" \
+      version="0.1"
