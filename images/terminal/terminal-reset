@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# terminal-reset: Reset the current terminal environment by deleting and recreating the pod
+# This will destroy all environment variables, temporary files, and session state
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}=== Terminal Environment Reset Tool ===${NC}"
+echo
+
+# Get pod and namespace information
+NAMESPACE=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace 2>/dev/null)
+PODNAME=$HOSTNAME
+
+if [[ -z "$NAMESPACE" || -z "$PODNAME" ]]; then
+    echo -e "${RED}Error: Could not determine pod name or namespace${NC}"
+    echo "This command must be run from inside a Kubernetes pod with a service account token."
+    exit 1
+fi
+
+echo -e "Current pod: ${GREEN}$PODNAME${NC}"
+echo -e "Namespace: ${GREEN}$NAMESPACE${NC}"
+echo
+
+# Show current pod information
+echo -e "${BLUE}Current pod information:${NC}"
+echo "$ oc get pod $PODNAME -n $NAMESPACE"
+if ! oc get pod "$PODNAME" -n "$NAMESPACE" 2>/dev/null; then
+    echo -e "${RED}Error: Could not retrieve pod information${NC}"
+    exit 1
+fi
+
+echo
+echo -e "${YELLOW}WARNING: This will delete the current pod and create a new one.${NC}"
+echo -e "${YELLOW}All of the following will be lost:${NC}"
+echo "  • Environment variables set during this session"
+echo "  • Files created in non-persistent directories (/tmp, /workspace, etc.)"
+echo "  • Command history from this session"
+echo "  • Any running processes"
+echo "  • Temporary configurations"
+echo
+
+# Confirmation prompt
+while true; do
+    echo -e "${RED}Do you really want to reset this terminal environment? (yes/no):${NC} "
+    read -r response
+    case $response in
+        [Yy][Ee][Ss])
+            echo
+            echo -e "${BLUE}Resetting terminal environment...${NC}"
+            break
+            ;;
+        [Nn][Oo])
+            echo -e "${GREEN}Reset cancelled.${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${YELLOW}Please answer 'yes' or 'no'.${NC}"
+            ;;
+    esac
+done
+
+# Delete the pod
+echo -e "${BLUE}Your terminal will disconnect shortly.${NC}"
+echo -e "${BLUE}Refresh your browser to connect to the new pod.${NC}"
+echo -e "${YELLOW}Note: It may take 30-60 seconds for the new pod to be ready.${NC}"
+echo
+
+echo "$ oc delete pod $PODNAME -n $NAMESPACE"
+if oc delete pod "$PODNAME" -n "$NAMESPACE"; then
+    # This will never be reached because the pod (and terminal) will be killed
+    echo -e "${GREEN}Pod deletion initiated successfully.${NC}"
+else
+    echo -e "${RED}Error: Failed to delete pod${NC}"
+    exit 1
+fi

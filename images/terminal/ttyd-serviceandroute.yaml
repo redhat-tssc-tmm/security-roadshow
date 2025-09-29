@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ttyd-admin-service
+  namespace: student-terminals
+  labels:
+    app: ttyd-admin-terminal
+spec:
+  selector:
+    app: ttyd-admin-terminal
+  ports:
+  - name: web
+    port: 80
+    targetPort: 7681
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: admin-terminal
+  namespace: student-terminals
+  labels:
+    app: ttyd-admin-terminal
+spec:
+  to:
+    kind: Service
+    name: ttyd-admin-service
+    weight: 100
+  port:
+    targetPort: web
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

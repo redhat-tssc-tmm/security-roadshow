@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ttyd-admin-terminal
+  namespace: student-terminals
+  labels:
+    app: ttyd-admin-terminal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ttyd-admin-terminal
+  template:
+    metadata:
+      labels:
+        app: ttyd-admin-terminal
+    spec:
+      serviceAccountName: terminal-admin
+      automountServiceAccountToken: true
+      containers:
+      - name: ttyd
+        image: quay.io/tssc_demos/ttyd-admin-terminal:latest
+        ports:
+        - containerPort: 7681
+          protocol: TCP
+        env:
+        - name: TERM
+          value: "xterm-256color"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 7681
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 7681
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: workspace
+        emptyDir: {}

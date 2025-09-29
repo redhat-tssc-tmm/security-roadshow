@@ -1,0 +1,51 @@
+# Containerfile using Red Hat UBI9 with ttyd binary
+FROM registry.access.redhat.com/ubi9/ubi:latest
+
+USER root
+
+# Install required packages using dnf (RHEL/UBI package manager)
+RUN dnf update -y && dnf install -y \
+    wget \
+    git \
+    bash-completion \
+    nano \
+    vim \
+    jq \
+    python3-pip \
+    && dnf clean all
+
+# Download and install ttyd binary
+RUN curl -L https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64 \
+    -o /usr/local/bin/ttyd && \
+    chmod +x /usr/local/bin/ttyd
+
+# Download and install oc CLI - oc only, no kubectl
+RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/openshift-client-linux.tar.gz \
+    | tar -xzC /usr/local/bin/ oc \
+    && chmod +x /usr/local/bin/oc
+
+# Create student user
+RUN groupadd -g 1001 student && \
+    useradd -u 1001 -g student -m -s /bin/bash student
+
+# Create workspace and oc config directories
+RUN mkdir -p /workspace /home/student/.kube && \
+    chown -R student:student /workspace /home/student
+
+# Copy scripts and configuration files
+COPY --chown=student:student configure-oc.sh /home/student/configure-oc.sh
+COPY --chown=student:student student-bashrc-additions.sh /home/student/.bashrc-additions
+COPY --chown=root:root terminal-reset /usr/local/bin/terminal-reset
+
+# Set up bash profile and make scripts executable
+RUN cat /home/student/.bashrc-additions >> /home/student/.bashrc && \
+    rm /home/student/.bashrc-additions && \
+    chmod +x /home/student/configure-oc.sh && \
+    chmod +x /usr/local/bin/terminal-reset
+
+USER student
+WORKDIR /workspace
+
+EXPOSE 7681
+
+ENTRYPOINT ["/home/student/configure-oc.sh"]
