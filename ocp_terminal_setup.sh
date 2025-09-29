@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail  # Exit on error, undefined vars, pipe failures
+set -eo pipefail  # Exit on error, pipe failures
 
 # Colors for output
 RED='\033[0;31m'
