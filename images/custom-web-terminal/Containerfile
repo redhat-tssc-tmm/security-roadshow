@@ -25,6 +25,11 @@ RUN chmod +x /usr/local/bin/setup-podman-scc.sh
 # Copy custom bashrc
 COPY bashrc /home/user/.bashrc
 
+# Copy updated tooling script
+COPY get-tooling-versions.sh /tmp/get-tooling-versions.sh
+RUN chmod +x /tmp/get-tooling-versions.sh
+
+
 # Set proper ownership and permissions for OpenShift arbitrary UIDs
 RUN chown -R 1000:0 /home/user && \
     chmod -R g+rwX /home/user
