@@ -21,11 +21,49 @@ shopt -s histappend
 # Append lines from this session to history, clear the session's history, re-read the history file
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
-# Set PS1 for a consistent terminal prompt
-PS1='\s-\v \w \$ '
-
 echo 'Welcome to the OpenShift Web Terminal. Type "help" for a list of installed CLI tools.'
 
-# Custom additions
+# Useful aliases
 alias ll='ls -al'
+
+#setup SCC (only works as cluster admin) and podman paths
 /usr/local/bin/setup-podman-scc.sh
+
+# OpenShift CLI completion
+if command -v oc >/dev/null 2>&1; then
+    source <(oc completion bash)
+fi
+
+
+# Git-aware prompt function
+git_branch() {
+    local branch
+    if branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); then
+        if [[ $branch == "HEAD" ]]; then
+            branch="detached*"
+        fi
+        echo " ($branch)"
+    fi
+}
+
+# Git status indicators
+git_status() {
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        local status=""
+        if ! git diff --quiet 2>/dev/null; then
+            status+="*"  # Modified files
+        fi
+        if ! git diff --cached --quiet 2>/dev/null; then
+            status+="+"  # Staged files
+        fi
+        if [[ -n $(git ls-files --other --exclude-standard 2>/dev/null) ]]; then
+            status+="?"  # Untracked files
+        fi
+        if [[ -n $status ]]; then
+            echo " [$status]"
+        fi
+    fi
+}
+
+# Set git-aware prompt with colors applied in PS1
+export PS1="\[\033[01;32m\]\s-\v\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\[\033[01;33m\]\$(git_branch)\[\033[00m\]\[\033[01;31m\]\$(git_status)\[\033[00m\]\$ "
