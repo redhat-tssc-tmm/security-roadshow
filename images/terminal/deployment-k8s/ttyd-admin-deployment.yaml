@@ -18,6 +18,40 @@ spec:
       serviceAccountName: terminal-admin
       automountServiceAccountToken: true
       containers:
+      - name: oauth2-proxy
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+        args:
+        - --config=/etc/oauth2-proxy/oauth2_proxy.cfg
+        ports:
+        - containerPort: 4180
+          name: oauth-proxy
+          protocol: TCP
+        env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-oauth-secret
+              key: client-id
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-oauth-secret
+              key: client-secret
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-oauth-secret
+              key: cookie-secret
+        volumeMounts:
+        - name: oauth-config
+          mountPath: /etc/oauth2-proxy
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
       - name: ttyd
         image: quay.io/tssc_demos/ttyd-admin-terminal:latest
         ports:
@@ -34,8 +68,7 @@ spec:
             memory: "512Mi"
             cpu: "500m"
         securityContext:
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
+          privileged: true
           runAsUser: 1001
         volumeMounts:
         - name: workspace
@@ -55,3 +88,6 @@ spec:
       volumes:
       - name: workspace
         emptyDir: {}
+      - name: oauth-config
+        configMap:
+          name: oauth2-proxy-config

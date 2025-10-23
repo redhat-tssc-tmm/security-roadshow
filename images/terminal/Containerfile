@@ -12,6 +12,9 @@ RUN dnf update -y && dnf install -y \
     vim \
     jq \
     python3-pip \
+    podman \
+    fuse-overlayfs \
+    slirp4netns \
     && dnf clean all
 
 # Download and install ttyd binary
@@ -31,6 +34,11 @@ RUN groupadd -g 1001 student && \
 # Create workspace and oc config directories
 RUN mkdir -p /workspace /home/student/.kube && \
     chown -R student:student /workspace /home/student
+
+# Configure rootless podman for student user
+RUN mkdir -p /home/student/.config/containers && \
+    echo -e '[storage]\ndriver = "overlay"\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"' > /home/student/.config/containers/storage.conf && \
+    chown -R student:student /home/student/.config
 
 # Copy scripts and configuration files
 COPY --chown=student:student configure-oc.sh /home/student/configure-oc.sh

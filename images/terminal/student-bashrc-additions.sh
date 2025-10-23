@@ -44,4 +44,4 @@ git_status() {
 }
 
 # Set git-aware prompt with colors applied in PS1
-export PS1="\[\033[01;32m\]student@openshift\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\[\033[01;33m\]\$(git_branch)\[\033[00m\]\[\033[01;31m\]\$(git_status)\[\033[00m\]\$ "
+export PS1="\[\033[01;32m\]podman-terminal\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\[\033[01;33m\]\$(git_branch)\[\033[00m\]\[\033[01;31m\]\$(git_status)\[\033[00m\]\$ "
