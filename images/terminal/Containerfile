@@ -31,6 +31,10 @@ RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/ope
 RUN groupadd -g 1001 student && \
     useradd -u 1001 -g student -m -s /bin/bash student
 
+# Configure subordinate UIDs and GIDs for rootless podman
+RUN echo "student:100000:65536" > /etc/subuid && \
+    echo "student:100000:65536" > /etc/subgid
+
 # Create workspace and oc config directories
 RUN mkdir -p /workspace /home/student/.kube && \
     chown -R student:student /workspace /home/student
