@@ -3,10 +3,6 @@ FROM registry.redhat.io/web-terminal/web-terminal-tooling-rhel9@sha256:0b133afa9
 # Switch to root to install software
 USER 0
 
-# Install Podman
-RUN microdnf install -y podman fuse-overlayfs && \
-    microdnf clean all
-
 # Download and install the latest Helm
 ARG HELM_VERSION=3.19.0
 RUN curl -L https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o /tmp/helm.tar.gz && \
@@ -17,10 +13,6 @@ RUN curl -L https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o /tmp
 
 # Verify installation
 RUN helm version
-
-# Copy startup script to configure SCC
-COPY setup-podman-scc.sh /usr/local/bin/setup-podman-scc.sh
-RUN chmod +x /usr/local/bin/setup-podman-scc.sh
 
 # Copy custom bashrc
 COPY bashrc /home/user/.bashrc

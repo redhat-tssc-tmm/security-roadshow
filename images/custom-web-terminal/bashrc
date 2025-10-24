@@ -1,10 +1,6 @@
 # Set default editor to vim instead of default fallback vi
 export EDITOR=vim
 
-# Configure Podman to use runtime-created directories (avoids ownership issues)
-export XDG_CONFIG_HOME=$HOME/.config-runtime
-export XDG_DATA_HOME=$HOME/.local/share
-
 function help_message() {
   echo "Installed tools:"
   /tmp/get-tooling-versions.sh
@@ -25,9 +21,6 @@ echo 'Welcome to the OpenShift Web Terminal. Type "help" for a list of installed
 
 # Useful aliases
 alias ll='ls -al'
-
-#setup SCC (only works as cluster admin) and podman paths
-/usr/local/bin/setup-podman-scc.sh
 
 # OpenShift CLI completion
 if command -v oc >/dev/null 2>&1; then
