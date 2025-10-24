@@ -14,6 +14,13 @@ data:
     # Redirect URL (update with your actual route hostname)
     redirect_url = "https://admin-terminal-student-terminals.apps.your-cluster.com/oauth2/callback"
 
+    # Skip OIDC audience validation (Keycloak sends "account" instead of client ID)
+    skip_oidc_discovery = false
+    oidc_extra_audiences = ["account"]
+
+    # Skip splash page and go directly to sign-in
+    skip_provider_button = true
+
     # Upstream to proxy to (ttyd on localhost)
     upstreams = ["http://127.0.0.1:7681"]
 
