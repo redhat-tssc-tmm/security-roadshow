@@ -27,6 +27,14 @@ RUN curl -L https://mirror.openshift.com/pub/openshift-v4/clients/ocp/stable/ope
     | tar -xzC /usr/local/bin/ oc \
     && chmod +x /usr/local/bin/oc
 
+# Download and install syft binary
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+# Download and install roxctl binary
+RUN curl -L https://mirror.openshift.com/pub/rhacs/assets/latest/bin/linux/roxctl \
+    -o /usr/local/bin/roxctl && \
+    chmod +x /usr/local/bin/roxctl
+
 # Create student user
 RUN groupadd -g 1001 student && \
     useradd -u 1001 -g student -m -s /bin/bash student
@@ -46,6 +54,8 @@ RUN mkdir -p /home/student/.config/containers && \
 
 # Copy scripts and configuration files
 COPY --chown=student:student configure-oc.sh /home/student/configure-oc.sh
+COPY --chown=student:student setup-tas-tools.sh /home/student/setup-tas-tools.sh
+COPY --chown=student:student setup-tas-environment.sh /home/student/setup-tas-environment.sh
 COPY --chown=student:student student-bashrc-additions.sh /home/student/.bashrc-additions
 COPY --chown=root:root terminal-reset /usr/local/bin/terminal-reset
 
@@ -53,6 +63,8 @@ COPY --chown=root:root terminal-reset /usr/local/bin/terminal-reset
 RUN cat /home/student/.bashrc-additions >> /home/student/.bashrc && \
     rm /home/student/.bashrc-additions && \
     chmod +x /home/student/configure-oc.sh && \
+    chmod +x /home/student/setup-tas-tools.sh && \
+    chmod +x /home/student/setup-tas-environment.sh && \
     chmod +x /usr/local/bin/terminal-reset
 
 USER student

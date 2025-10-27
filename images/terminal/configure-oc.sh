@@ -32,6 +32,12 @@ echo "Current user: $(oc whoami)"
 echo "Current context: $(oc config current-context)"
 echo "Available projects: $(oc get projects --no-headers | wc -l)"
 
+# Setup Trusted Artifact Signer CLI tools if available
+source /home/student/setup-tas-tools.sh
+
+# Setup Trusted Artifact Signer environment variables
+source /home/student/setup-tas-environment.sh
+
 # Start ttyd with bash
 exec /usr/local/bin/ttyd \
     --port 7681 \
@@ -39,6 +45,6 @@ exec /usr/local/bin/ttyd \
     --writable \
     --client-option fontFamily="'Courier New', monospace" \
     --client-option fontSize=18 \
-    --client-option titleFixed="OpenShift Terminal" \
+    --client-option titleFixed="Podman on OpenShift Terminal" \
     --client-option disableReconnect=true \
     bash 
