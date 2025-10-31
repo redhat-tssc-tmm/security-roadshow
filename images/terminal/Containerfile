@@ -13,6 +13,7 @@ RUN dnf update -y && dnf install -y \
     jq \
     python3-pip \
     podman \
+    skopeo \
     fuse-overlayfs \
     slirp4netns \
     && dnf clean all
@@ -56,6 +57,7 @@ RUN mkdir -p /home/student/.config/containers && \
 COPY --chown=student:student configure-oc.sh /home/student/configure-oc.sh
 COPY --chown=student:student setup-tas-tools.sh /home/student/setup-tas-tools.sh
 COPY --chown=student:student setup-tas-environment.sh /home/student/setup-tas-environment.sh
+COPY --chown=student:student setup-acs-integration.sh /home/student/setup-acs-integration.sh
 COPY --chown=student:student student-bashrc-additions.sh /home/student/.bashrc-additions
 COPY --chown=root:root terminal-reset /usr/local/bin/terminal-reset
 
@@ -65,6 +67,7 @@ RUN cat /home/student/.bashrc-additions >> /home/student/.bashrc && \
     chmod +x /home/student/configure-oc.sh && \
     chmod +x /home/student/setup-tas-tools.sh && \
     chmod +x /home/student/setup-tas-environment.sh && \
+    chmod +x /home/student/setup-acs-integration.sh && \
     chmod +x /usr/local/bin/terminal-reset
 
 USER student

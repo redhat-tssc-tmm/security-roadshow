@@ -38,6 +38,9 @@ source /home/student/setup-tas-tools.sh
 # Setup Trusted Artifact Signer environment variables
 source /home/student/setup-tas-environment.sh
 
+# Setup ACS integration for Quay
+source /home/student/setup-acs-integration.sh
+
 # Start ttyd with bash
 exec /usr/local/bin/ttyd \
     --port 7681 \

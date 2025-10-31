@@ -1,12 +1,16 @@
 # Student .bashrc additions for OpenShift terminal environment
 
+export ROX_INSECURE_CLIENT_SKIP_TLS_VERIFY=true
+
 # Add TAS CLI tools to PATH if directory exists
 if [ -d "/home/student/clitools" ]; then
     export PATH="/home/student/clitools:$PATH"
 fi
 
-# RHACS Central endpoint
-export ROX_ENDPOINT=central.tssc-acs.svc.cluster.local:443
+# Source ACS credentials if available
+if [ -f "/home/student/.acs_credentials" ]; then
+    source /home/student/.acs_credentials
+fi
 
 # Enable bash completion
 if [ -f /etc/bash_completion ]; then
