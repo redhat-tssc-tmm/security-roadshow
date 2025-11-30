@@ -39,6 +39,6 @@ exec /usr/local/bin/ttyd \
     --writable \
     --client-option fontFamily="'Courier New', monospace" \
     --client-option fontSize=18 \
-    --client-option titleFixed="OpenShift Terminal" \
+    --client-option titleFixed="Podman & OpenShift Terminal" \
     --client-option disableReconnect=true \
     bash 
