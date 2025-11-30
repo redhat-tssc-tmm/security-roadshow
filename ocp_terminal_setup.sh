@@ -55,8 +55,8 @@ cleanup() {
     if [[ -f "cosign-amd64" ]]; then
         rm -f cosign-amd64
     fi
-    if [[ -f "gitsign-amd64" ]]; then
-        rm -f gitsign-amd64
+    if [[ -f "ec-amd64" ]]; then
+        rm -f ec-amd64
     fi
 }
 
@@ -191,7 +191,7 @@ setup_git() {
 
 # Function to install CLI tools
 install_cli() {
-    print_status "Starting cosign and gitsign installation..."
+    print_status "Starting cli installation..."
     
     # Check if oc command exists
     if ! command -v oc &> /dev/null; then
@@ -281,7 +281,7 @@ install_cli() {
     
     chmod +x ec-amd64
     
-    if ! mv ec-amd64 $HOME/clitools/gitsign; then
+    if ! mv ec-amd64 $HOME/clitools/ec; then
         print_error "Failed to install ec to $HOME/clitools"
         exit 1
     fi
