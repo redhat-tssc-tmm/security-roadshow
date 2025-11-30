@@ -1,0 +1,30 @@
+FROM registry.redhat.io/web-terminal/web-terminal-tooling-rhel9@sha256:0b133afa920b5180a3c3abe3dd5c73a9cfc252a71346978f94adcb659d683404
+
+# Switch to root to install software
+USER 0
+
+# Download and install the latest Helm
+ARG HELM_VERSION=3.19.0
+RUN curl -L https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz -o /tmp/helm.tar.gz && \
+    tar -zxvf /tmp/helm.tar.gz -C /tmp && \
+    mv /tmp/linux-amd64/helm /usr/local/bin/helm && \
+    chmod +x /usr/local/bin/helm && \
+    rm -rf /tmp/helm.tar.gz /tmp/linux-amd64
+
+# Verify installation
+RUN helm version
+
+# Copy custom bashrc
+COPY bashrc /home/user/.bashrc
+
+# Copy updated tooling script
+COPY get-tooling-versions.sh /tmp/get-tooling-versions.sh
+RUN chmod +x /tmp/get-tooling-versions.sh
+
+
+# Set proper ownership and permissions for OpenShift arbitrary UIDs
+RUN chown -R 1000:0 /home/user && \
+    chmod -R g+rwX /home/user
+
+# Switch back to the original user
+USER 1000

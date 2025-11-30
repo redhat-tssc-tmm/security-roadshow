@@ -1,0 +1,58 @@
+Perfect! I've added Keycloak OIDC authentication to your terminal deployment. Here's what I've created:
+
+  New Files Created
+
+  deployment-k8s/oauth-secret.yaml - Secret for OIDC credentials
+  - Contains placeholders for your Keycloak client ID, secret, and cookie secret
+
+  deployment-k8s/oauth-config.yaml - oauth2-proxy configuration
+  - Configures Keycloak as the OIDC provider
+  - Sets up redirect URLs and upstream proxy settings
+
+  Modified Files
+
+  deployment-k8s/ttyd-admin-deployment.yaml
+  - Added oauth2-proxy as a sidecar container on port 4180
+  - Added volume mount for the oauth configuration
+  - oauth2-proxy sits in front of ttyd and handles authentication
+
+  deployment-k8s/ttyd-serviceandroute.yaml
+  - Changed targetPort from 7681 (ttyd) to 4180 (oauth2-proxy)
+  - Traffic now flows: Route → Service → oauth2-proxy → ttyd
+
+  Configuration Steps
+
+  1. Configure your Keycloak client
+
+  In your Keycloak admin console, ensure your OIDC client has:
+  - Valid Redirect URIs: https://admin-terminal-student-terminals.apps.your-cluster.com/oauth2/callback
+  - Access Type: confidential
+  - Standard Flow Enabled: ON
+
+  2. Update oauth-secret.yaml with your values:
+
+  # Generate a random cookie secret
+  openssl rand -base64 32
+
+  # Edit the secret file and replace:
+  # - your-client-id
+  # - your-client-secret  
+  # - cookie-secret (use the generated value above)
+
+  3. Update oauth-config.yaml with your values:
+
+  - oidc_issuer_url: Your Keycloak realm URL (e.g., https://keycloak.example.com/realms/myrealm)
+  - redirect_url: Your actual route hostname with /oauth2/callback
+
+  4. Deploy the changes:
+
+  # Apply the new configurations
+  oc apply -f deployment-k8s/oauth-secret.yaml
+  oc apply -f deployment-k8s/oauth-config.yaml
+  oc apply -f deployment-k8s/ttyd-admin-deployment.yaml
+  oc apply -f deployment-k8s/ttyd-serviceandroute.yaml
+
+  Now when users access the terminal route, they'll be redirected to Keycloak for authentication before gaining access to
+  the terminal.
+
+

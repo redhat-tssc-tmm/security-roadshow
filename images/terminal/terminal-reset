@@ -3,7 +3,7 @@
 # terminal-reset: Reset the current terminal environment by deleting and recreating the pod
 # This will destroy all environment variables, temporary files, and session state
 
-set -e
+#set -e
 
 # Colors for output
 RED='\033[0;31m'

@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth2-proxy-config
+  namespace: student-terminals
+data:
+  oauth2_proxy.cfg: |
+    # OAuth Provider Configuration
+    provider = "keycloak-oidc"
+
+    # Replace with your Keycloak URL and realm
+    oidc_issuer_url = "https://your-keycloak.example.com/realms/your-realm"
+
+    # Redirect URL (update with your actual route hostname)
+    redirect_url = "https://admin-terminal-student-terminals.apps.your-cluster.com/oauth2/callback"
+
+    # Skip OIDC audience validation (Keycloak sends "account" instead of client ID)
+    skip_oidc_discovery = false
+    oidc_extra_audiences = ["account"]
+
+    # Skip splash page and go directly to sign-in
+    skip_provider_button = true
+
+    # Upstream to proxy to (ttyd on localhost)
+    upstreams = ["http://127.0.0.1:7681"]
+
+    # Security settings
+    cookie_secure = true
+    cookie_httponly = true
+    cookie_samesite = "lax"
+
+    # Email domains to allow (use * for any)
+    email_domains = ["*"]
+
+    # Logging
+    standard_logging = true
+    request_logging = true
+    auth_logging = true
+
+    # HTTP settings
+    http_address = "0.0.0.0:4180"
+
+    # Skip authentication for health checks
+    skip_auth_routes = ["^/ping$"]
