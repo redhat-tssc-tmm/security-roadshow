@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail  # Exit on error, pipe failures
+#set -eo pipefail  # Exit on error, pipe failures
 
 # Colors for output
 RED='\033[0;31m'
@@ -213,9 +213,11 @@ install_cli() {
     # Construct URLs
     COSIGN_CLI_URL="https://${ROUTE_HOST}/clients/linux/cosign-amd64.gz"
     GITSIGN_CLI_URL="https://${ROUTE_HOST}/clients/linux/gitsign-amd64.gz"
-    
-    print_status "Cosign URL: $COSIGN_CLI_URL"
+    EC_CLI_URL="https://${ROUTE_HOST}/clients/linux/ec-amd64.gz"
+
+    print_status "Cosign URL : $COSIGN_CLI_URL"
     print_status "Gitsign URL: $GITSIGN_CLI_URL"
+    print_status "ec URL     : $EC_CLI_URL"
     
     mkdir -p "$HOME/clitools"
     clitools_in_path
@@ -234,6 +236,14 @@ install_cli() {
         exit 1
     fi
     
+    print_status "Downloading ec..."
+    if ! curl -fsSL -o "$(basename "$EC_CLI_URL")" "$EC_CLI_URL"; then
+        print_error "Failed to download ec from $EC_CLI_URL"
+        exit 1
+    fi
+    
+
+
     # Extract and install cosign
     print_status "Installing cosign..."
     if ! gunzip cosign-amd64.gz; then
@@ -262,6 +272,24 @@ install_cli() {
         exit 1
     fi
     
+    # Extract and install enterprise contract (ec)
+    print_status "Installing conforma / enterprise contract (ec)..."
+    if ! gunzip ec-amd64.gz; then
+        print_error "Failed to extract ec-amd64.gz"
+        exit 1
+    fi
+    
+    chmod +x ec-amd64
+    
+    if ! mv ec-amd64 $HOME/clitools/gitsign; then
+        print_error "Failed to install ec to $HOME/clitools"
+        exit 1
+    fi
+
+
+
+
+
     # Verify installations
     print_status "Verifying installations..."
     
@@ -281,6 +309,15 @@ install_cli() {
         exit 1
     fi
     
+    if command -v ec &> /dev/null; then
+        print_status "ec installed successfully:"
+        ec version
+    else
+        print_error "ec installation failed"
+        exit 1
+    fi
+
+
     print_status "CLI installation completed successfully!"
 }
 
