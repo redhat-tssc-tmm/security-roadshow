@@ -3,11 +3,18 @@
 # setup-tas-environment.sh: Configure TAS environment variables for student terminal
 # Usage: setup-tas-environment.sh [TAS_NAMESPACE]
 #   TAS_NAMESPACE: Optional namespace containing TAS installation (default: tssc-tas)
+#   TAS_REALM: Optional Keycloak realm override (default: tssc-iam)
 
 #set -e
 
 # Get TAS namespace from parameter or use default
 TAS_NAMESPACE="${1:-tssc-tas}"
+
+# Keycloak realm holding the signing client. RHADS 1.8 moved it from
+# trusted-artifact-signer to tssc-iam. Override for a pre-1.8 environment.
+# Not auto-detected: 1.8 clusters still carry both realms, so there is no
+# unambiguous signal to read.
+TAS_REALM="${TAS_REALM:-tssc-iam}"
 
 # Helper functions for output
 print_status() {
@@ -95,7 +102,7 @@ if [[ -z "$KEYCLOAK_HOST" ]]; then
     print_error "Could not retrieve Keycloak route from tssc-keycloak namespace"
     return 0 2>/dev/null || exit 0
 fi
-OIDC_ISSUER_URL="https://${KEYCLOAK_HOST}/realms/trusted-artifact-signer"
+OIDC_ISSUER_URL="https://${KEYCLOAK_HOST}/realms/${TAS_REALM}"
 
 print_status "Retrieving Fulcio URL..."
 COSIGN_FULCIO_URL=$(oc get fulcio -o jsonpath='{.items[0].status.url}' -n "$TAS_NAMESPACE" 2>/dev/null)

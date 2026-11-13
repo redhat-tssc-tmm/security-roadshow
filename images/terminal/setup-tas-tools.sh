@@ -53,12 +53,39 @@ BINARIES=(
     "tuftool-amd64.gz"
 )
 
+# The service can exist while its pod is still starting, and this script runs
+# once at container start with no second chance. Wait for the server to answer
+# before downloading anything, rather than failing the whole set on a race.
+WAIT_ATTEMPTS=60
+WAIT_INTERVAL=2
+
+echo "Waiting for CLI server to respond..."
+READY=0
+for _ in $(seq 1 "$WAIT_ATTEMPTS"); do
+    if curl -sf -o /dev/null --max-time 5 -r 0-0 "$CLI_SERVER_URL/clients/linux/${BINARIES[0]}"; then
+        READY=1
+        break
+    fi
+    sleep "$WAIT_INTERVAL"
+done
+
+if [[ "$READY" -ne 1 ]]; then
+    echo "Warning: CLI server did not respond within $((WAIT_ATTEMPTS * WAIT_INTERVAL))s - skipping CLI tools setup."
+    echo "Re-run this script once it is reachable:  bash ~/setup-tas-tools.sh"
+    rm -rf "$DOWNLOAD_DIR"
+    return 0 2>/dev/null || exit 0
+fi
+
+INSTALLED=()
+FAILED=()
+
 # Download and extract each binary
 for binary in "${BINARIES[@]}"; do
     echo "Downloading $binary..."
 
     # Download the binary
-    if curl -f -L -o "$DOWNLOAD_DIR/$binary" "$CLI_SERVER_URL/clients/linux/$binary" 2>/dev/null; then
+    if curl -f -L --retry 5 --retry-delay 3 --retry-connrefused \
+         -o "$DOWNLOAD_DIR/$binary" "$CLI_SERVER_URL/clients/linux/$binary" 2>/dev/null; then
         echo "  ✓ Downloaded $binary"
 
         # Extract the binary
@@ -75,8 +102,10 @@ for binary in "${BINARIES[@]}"; do
         chmod +x "$CLI_TOOLS_DIR/$final_name"
 
         echo "  ✓ Installed $final_name"
+        INSTALLED+=("$final_name")
     else
         echo "  ✗ Failed to download $binary (skipping)"
+        FAILED+=("$binary")
     fi
 done
 
@@ -89,10 +118,12 @@ echo "Installed TAS CLI tools in $CLI_TOOLS_DIR:"
 ls -lh "$CLI_TOOLS_DIR"
 
 echo ""
-echo "TAS CLI tools setup complete!"
-echo "The following tools are now available:"
-echo "  - cosign"
-echo "  - ec"
-echo "  - gitsign"
-echo "  - rekor-cli"
-echo "  - tuftool"
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    echo "WARNING: ${#FAILED[@]} of ${#BINARIES[@]} TAS CLI tools did NOT install:"
+    printf '  - %s\n' "${FAILED[@]}"
+    echo "Those commands will not be on your PATH."
+    echo "Re-run this script to try again:  bash ~/setup-tas-tools.sh"
+else
+    echo "TAS CLI tools setup complete! The following tools are now available:"
+    printf '  - %s\n' "${INSTALLED[@]}"
+fi
