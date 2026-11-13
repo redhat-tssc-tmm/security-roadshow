@@ -72,31 +72,31 @@ tas_initialize() {
     
     # Get environment variable values from OpenShift
     print_status "Retrieving TUF URL..."
-    local TUF_URL=$(oc get tuf -o jsonpath='{.items[0].status.url}' -n trusted-artifact-signer 2>/dev/null)
+    local TUF_URL=$(oc get tuf -o jsonpath='{.items[0].status.url}' -n tssc-tas 2>/dev/null)
     if [[ -z "$TUF_URL" ]]; then
-        print_error "Could not retrieve TUF URL from trusted-artifact-signer namespace"
+        print_error "Could not retrieve TUF URL from tssc-tas namespace"
         exit 1
     fi
     
     print_status "Retrieving Keycloak route..."
-    local KEYCLOAK_HOST=$(oc get route keycloak -n keycloak --no-headers 2>/dev/null | tail -n 1 | awk '{print $2}')
+    local KEYCLOAK_HOST=$(oc get route keycloak -n tssc-keycloak --no-headers 2>/dev/null | tail -n 1 | awk '{print $2}')
     if [[ -z "$KEYCLOAK_HOST" ]]; then
-        print_error "Could not retrieve Keycloak route from keycloak namespace"
+        print_error "Could not retrieve Keycloak route from tssc-keycloak namespace"
         exit 1
     fi
-    local OIDC_ISSUER_URL="https://${KEYCLOAK_HOST}/realms/backstage"
+    local OIDC_ISSUER_URL="https://${KEYCLOAK_HOST}/realms/tssc-iam"
     
     print_status "Retrieving Fulcio URL..."
-    local COSIGN_FULCIO_URL=$(oc get fulcio -o jsonpath='{.items[0].status.url}' -n trusted-artifact-signer 2>/dev/null)
+    local COSIGN_FULCIO_URL=$(oc get fulcio -o jsonpath='{.items[0].status.url}' -n tssc-tas 2>/dev/null)
     if [[ -z "$COSIGN_FULCIO_URL" ]]; then
-        print_error "Could not retrieve Fulcio URL from trusted-artifact-signer namespace"
+        print_error "Could not retrieve Fulcio URL from tssc-tas namespace"
         exit 1
     fi
     
     print_status "Retrieving Rekor URL..."
-    local COSIGN_REKOR_URL=$(oc get rekor -o jsonpath='{.items[0].status.url}' -n trusted-artifact-signer 2>/dev/null)
+    local COSIGN_REKOR_URL=$(oc get rekor -o jsonpath='{.items[0].status.url}' -n tssc-tas 2>/dev/null)
     if [[ -z "$COSIGN_REKOR_URL" ]]; then
-        print_error "Could not retrieve Rekor URL from trusted-artifact-signer namespace"
+        print_error "Could not retrieve Rekor URL from tssc-tas namespace"
         exit 1
     fi
     
